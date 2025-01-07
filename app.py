@@ -13,7 +13,7 @@ UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # Max file size: 16 MB
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
 class CNN(nn.Module):
     def __init__(self):
@@ -61,7 +61,6 @@ def upload_file():
         file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(file_path)
 
-        # Load and preprocess the image
         image_path = file_path
         image = Image.open(image_path).convert('L')
         image = image.resize((28, 28))
@@ -69,12 +68,10 @@ def upload_file():
         image_tensor = transform(image)
         image_tensor = image_tensor.unsqueeze(0)
 
-        # Load the pre-trained model (assuming you have one)
         model = CNN()
         model.load_state_dict(torch.load('model.pth'))
         model.eval()
 
-        # Make predictions
         with torch.no_grad():
             output = model(image_tensor)
             _, predicted = torch.max(output, 1)
@@ -84,7 +81,6 @@ def upload_file():
 
     return "Invalid file type. Only images are allowed."
 
-# Route to serve the uploaded image
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
