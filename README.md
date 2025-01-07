@@ -1,3 +1,2 @@
-# to-do-list
-To-Do List App built with Flask using a Flask Crashcourse. 
-- I used a virtual environment to install Flask, which I could not upload on GitHub due to the file size limit. 
+# MNIST-Application
+I have created a very simple application that allows users to upload handwritten digits and for my model to predict it. My GitHub is very simple to use organized in different folders. The templates section contains all my pages of my website (HTML). My app.py consists of my Flask program that allows a user to upload and my model to predict a value. I additionally have the uploads section, which saves all the images the user uploads in my application. Finally, I have the static folder, which contains all my CSS files. 
