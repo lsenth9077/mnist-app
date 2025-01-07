@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<title>Predictor</title>
+{% endblock %}
+
+{% block body %}
+<div class="content">
+    <h1 style="text-align: center;">Predictor</h1>
+    <h3>Input</h3>
+    <img src="{{ file_path }}" alt="">
+    <h3>Output</h3>
+    <p>{{ prediction }}</p>
+    <a href="index.html">Return Home</a>
+</div>
+{% endblock %}
