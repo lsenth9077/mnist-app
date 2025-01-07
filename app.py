@@ -1,61 +1,93 @@
-from flask import Flask, render_template, request, redirect
-from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime
+from flask import Flask, request, render_template, send_from_directory
+import os
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torchvision import datasets, transforms
+from PIL import Image
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///test.db'
-db = SQLAlchemy(app)
 
-app.app_context().push()
 
-class Todo(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    content = db.Column(db.String(200), nullable=False)
-    date_created = db.Column(db.DateTime, default=datetime.utcnow)
+UPLOAD_FOLDER = 'uploads'
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
-    def __repr__(self):
-        return '<Task %r>' % self.id
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # Max file size: 16 MB
 
-@app.route('/', methods=['POST', 'GET'])
+class CNN(nn.Module):
+    def __init__(self):
+        super(CNN, self).__init__()
+        
+        # Convolutional layers
+        self.conv1 = nn.Conv2d(1, 32, kernel_size=3, padding=1)  
+        self.conv2 = nn.Conv2d(32, 64, kernel_size=3, padding=1)
+        
+        # Fully connected layers
+        self.fc1 = nn.Linear(64 * 7 * 7, 128)
+        self.fc2 = nn.Linear(128, 10)
+
+        # MaxPooling layer
+        self.pool = nn.MaxPool2d(2, 2)
+
+    def forward(self, x):
+        x = self.pool(torch.relu(self.conv1(x)))
+        x = self.pool(torch.relu(self.conv2(x)))
+        x = x.view(-1, 64 * 7 * 7)
+        x = torch.relu(self.fc1(x))
+        x = self.fc2(x)
+        return x
+
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+@app.route('/')
 def index():
-    if request.method == 'POST':
-        task_content = request.form['content']
-        new_task = Todo(content=task_content)
+    return render_template('index.html')
 
-        try:
-            db.session.add(new_task)
-            db.session.commit()
-            return redirect('/')
-        except:
-            return 'There was an issue adding your task'
-    else:
-        tasks = Todo.query.order_by(Todo.date_created).all()
-        return render_template('index.html', tasks=tasks)
 
-@app.route('/delete/<int:id>')  
-def delete(id):
-    task_to_delete = Todo.query.get_or_404(id)
-    try:
-        db.session.delete(task_to_delete)
-        db.session.commit()
-        return redirect('/')
-    except:
-        return 'There was a problem deleting that task'
+@app.route('/upload', methods=['POST'])
+def upload_file():
+    if 'file' not in request.files:
+        return "No file part"
+    file = request.files['file']
+    if file.filename == '':
+        return "No selected file"
     
+    if file and allowed_file(file.filename):
+        filename = file.filename
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(file_path)
 
-@app.route('/update/<int:id>', methods=['GET', 'POST'])
-def update(id):
-    task = Todo.query.get_or_404(id)
+        # Load and preprocess the image
+        image_path = file_path
+        image = Image.open(image_path).convert('L')
+        image = image.resize((28, 28))
+        transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))])
+        image_tensor = transform(image)
+        image_tensor = image_tensor.unsqueeze(0)
 
-    if request.method == 'POST':
-        task.content = request.form['content']
-        try:
-            db.session.commit()
-            return redirect('/')
-        except:
-            return 'There was a problem updating that task'
-    else:
-        return render_template('update.html', task=task)
+        # Load the pre-trained model (assuming you have one)
+        model = CNN()
+        model.load_state_dict(torch.load('model.pth'))
+        model.eval()
+
+        # Make predictions
+        with torch.no_grad():
+            output = model(image_tensor)
+            _, predicted = torch.max(output, 1)
+
+        prediction = predicted.item()
+        return render_template('model.html', file_path=file_path, prediction=prediction)
+
+    return "Invalid file type. Only images are allowed."
+
+# Route to serve the uploaded image
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 if __name__ == "__main__":
     app.run(debug=True)
