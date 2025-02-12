@@ -1,13 +1,19 @@
-from flask import Flask, request, render_template, send_from_directory
+from flask import Flask, request, render_template, send_from_directory, send_file
+import numpy as np
 import os
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torchvision import datasets, transforms
+import matplotlib.pyplot as plt
+import matplotlib
+import seaborn as sns
+from sklearn.metrics import confusion_matrix
 from PIL import Image
 
 app = Flask(__name__)
 
+matplotlib.use('agg')
 
 UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
@@ -57,6 +63,7 @@ def upload_file():
         return "No selected file"
     
     if file and allowed_file(file.filename):
+        select = request.form.get('true-values')
         filename = file.filename
         file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(file_path)
@@ -80,7 +87,22 @@ def upload_file():
             _, predicted = torch.max(output, 1)
 
         prediction = predicted.item()
-        return render_template('model.html', file_path=file_path, prediction=prediction)
+        
+        # Create Confusion Matrix
+        cm = np.zeros((10, 10), dtype="int")
+        cm[int(select), prediction] = 1
+
+        plt.figure(figsize=(8, 6))
+        sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=range(10), yticklabels=range(10))
+        plt.xlabel("Predicted Label")
+        plt.ylabel("True Label")
+        plt.title("Confusion Matrix for User's Digit")
+
+        cm_path = "uploads/confusion_matrix.png"
+        plt.savefig(cm_path, dpi=300, bbox_inches='tight')
+        plt.close()
+
+        return render_template('model.html', file_path=file_path, prediction=prediction, cm_path=cm_path)
 
     return "Invalid file type. Only images are allowed."
 
@@ -88,6 +110,10 @@ def upload_file():
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+@app.route("/download")
+def download_cm():
+    return send_from_directory(app.config['UPLOAD_FOLDER'], "confusion_matrix.png")
 
 if __name__ == "__main__":
     app.run(debug=True)
