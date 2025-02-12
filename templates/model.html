@@ -10,7 +10,10 @@
     <h3>Input</h3>
     <img src="{{ file_path }}" alt="">
     <h3>Output</h3>
-    <p>{{ prediction }} -> the number that the ML model predicts the above-handwritten digit is</p>
+    <p>The digit '{{ prediction }}' was written in the image</p>
+    <h3>Confusion Matrix</h3>
+    <a href="/download"><button>Show Confusion Matrix</button></a>
+    <img src="{{ cm_path }}" class="cm_image" width="450px" height="auto" alt="">
     <a href="/">Return Home</a>
 </div>
 {% endblock %}
