@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, send_from_directory, send_file
+from flask import Flask, request, render_template, send_from_directory, redirect, url_for, session
 import numpy as np
 import os
 import torch
@@ -10,8 +10,10 @@ import matplotlib
 import seaborn as sns
 from sklearn.metrics import confusion_matrix
 from PIL import Image
+import torch.nn.functional as F
 
 app = Flask(__name__)
+app.secret_key = "\xf0?a\x9a\\\xff\xd4;\x0c\xcbHi"
 
 matplotlib.use('agg')
 
@@ -21,6 +23,7 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # Max file size: 16 MB
 
+# Model 1
 class CNN(nn.Module):
     def __init__(self):
         super(CNN, self).__init__()
@@ -44,14 +47,52 @@ class CNN(nn.Module):
         x = self.fc2(x)
         return x
 
+# Model 2
+class FNN(nn.Module):
+    def __init__(self):
+        super(FNN, self).__init__()
+        self.fc1 = nn.Linear(28*28, 128)
+        self.fc2 = nn.Linear(128, 64)
+        self.fc3 = nn.Linear(64, 10)
+
+    def forward(self, x):
+        x = x.view(-1, 28*28)
+        x = torch.relu(self.fc1(x))
+        x = torch.relu(self.fc2(x))
+        return self.fc3(x)
+
+# Model 3
+class DeepCNN(nn.Module):
+    def __init__(self):
+        super(DeepCNN, self).__init__()
+        self.conv1 = nn.Conv2d(1, 32, kernel_size=3, padding=1)
+        self.conv2 = nn.Conv2d(32, 64, kernel_size=3, padding=1)
+        self.conv3 = nn.Conv2d(64, 128, kernel_size=3, padding=1)
+        self.pool = nn.MaxPool2d(2, 2)
+        self.dropout = nn.Dropout(0.25)
+        self.fc1 = nn.Linear(128 * 3 * 3, 256)
+        self.fc2 = nn.Linear(256, 10)
+
+    def forward(self, x):
+        x = self.pool(F.relu(self.conv1(x)))  # -> 32x14x14
+        x = self.pool(F.relu(self.conv2(x)))  # -> 64x7x7
+        x = self.pool(F.relu(self.conv3(x)))  # -> 128x3x3
+        x = x.view(-1, 128 * 3 * 3)
+        x = self.dropout(x)
+        x = F.relu(self.fc1(x))
+        x = self.fc2(x)
+        return x
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-
 @app.route('/')
+@app.route('/index')
 def index():
-    return render_template('index.html')
+    cm_model_path = request.args.get('cm_model_path')
+    training_loss = request.args.get('training_loss')
+
+    return render_template('index.html', cm_model_path=cm_model_path, training_loss=training_loss)
 
 
 @app.route('/upload', methods=['POST'])
@@ -67,6 +108,7 @@ def upload_file():
         filename = file.filename
         file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(file_path)
+        model_type = session.get('model-type')
 
         # Load and preprocess the image
         image_path = file_path
@@ -77,8 +119,18 @@ def upload_file():
         image_tensor = image_tensor.unsqueeze(0)
 
         # Load the pre-trained model (assuming you have one)
-        model = CNN()
-        model.load_state_dict(torch.load('model.pth'))
+        if model_type == "Model1":
+            model = CNN()
+            model.load_state_dict(torch.load('model.pth'))
+        elif model_type == "Model2":
+            model = FNN()
+            model.load_state_dict(torch.load('model2.pth'))
+        elif model_type == "Model3":
+           model = DeepCNN()
+           model.load_state_dict(torch.load('model3.pth')) 
+        else:
+            raise ValueError(f"Unknown model type: {model_type}")
+
         model.eval()
 
         # Make predictions
@@ -105,6 +157,23 @@ def upload_file():
         return render_template('model.html', file_path=file_path, prediction=prediction, cm_path=cm_path)
 
     return "Invalid file type. Only images are allowed."
+
+@app.route('/refresh', methods=['POST'])
+def model_images():
+    model_name = request.form.get('model-type')
+    session['model-type'] = request.form.get('model-type')
+
+    if model_name == "Model1":
+        cm_model_path = "static/images/model1_confusion_matrix.png"
+        training_loss = "static/images/model1_trainingloss.png"
+    elif model_name == "Model2":
+        cm_model_path = "static/images/model2_confusion_matrix.png"
+        training_loss = "static/images/model2_trainingloss.png"
+    elif model_name == "Model3":
+        cm_model_path = "static/images/model3_confusion_matrix.png"
+        training_loss = "static/images/model3_trainingloss.png"
+
+    return redirect(url_for('index', cm_model_path=cm_model_path, training_loss=training_loss))
 
 # Route to serve the uploaded image
 @app.route('/uploads/<filename>')
