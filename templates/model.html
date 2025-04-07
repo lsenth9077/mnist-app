@@ -11,13 +11,13 @@
     <img src="{{ file_path }}" alt="">
     <h3>Output</h3>
     <p>The digit '{{ prediction }}' was written in the image</p>
-    <h3>Training Loss vs Epoch</h3>
-    <img src="static/trainingloss.png" width="450px" height="auto" alt="">
     <h3>Confusion Matrix</h3>
     <a href="/download"><button>Show Confusion Matrix</button></a>
     <img src="{{ cm_path }}" class="cm_image" width="450px" height="auto" alt="">
+    <p>Confidence Level: {{ confidence_percent }}%</p>
     <a href="/">Return Home</a>
 </div>
 {% endblock %}
+
 
 
