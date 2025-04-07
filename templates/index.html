@@ -10,18 +10,19 @@
     <form action="/refresh" method="POST">
         <label for="model-type">Choose your model: </label>
         <select name="model-type" id="model-type">
-            <option value="Model1">Model 1 (CNN)</option>
-            <option value="Model2">Model 2 (FNN)</option>
-            <option value="Model3">Model 3 (Deep CNN)</option>
+            <option value="Select">Select</option>
+            <option value="Model 1">Model 1 (CNN)</option>
+            <option value="Model 2">Model 2 (FNN)</option>
+            <option value="Model 3">Model 3 (Deep CNN)</option>
         </select>
         <button type="submit">Submit</button>
         <p> </p>
     </form>
 
-    <h3>Model's Confusion Matrix</h3>
+    <h3>{{ model_name }} Confusion Matrix</h3>
     <img src="{{ cm_model_path }}" width="350px" height="auto" alt="Confusion Matrix">
     <br>
-    <h3>Model's Training Loss vs Epoch</h3>
+    <h3>{{ model_name }} Training Loss vs Epoch</h3>
     <img src="{{ training_loss }}" width="350px" height="auto" alt="Training Loss vs Epoch">
 
     <form action="/upload" method="POST" enctype="multipart/form-data" >
