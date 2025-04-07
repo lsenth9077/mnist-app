@@ -91,8 +91,9 @@ def allowed_file(filename):
 def index():
     cm_model_path = request.args.get('cm_model_path')
     training_loss = request.args.get('training_loss')
+    model_name = request.args.get('model_name')
 
-    return render_template('index.html', cm_model_path=cm_model_path, training_loss=training_loss)
+    return render_template('index.html', cm_model_path=cm_model_path, training_loss=training_loss, model_name=model_name)
 
 
 @app.route('/upload', methods=['POST'])
@@ -119,13 +120,13 @@ def upload_file():
         image_tensor = image_tensor.unsqueeze(0)
 
         # Load the pre-trained model (assuming you have one)
-        if model_type == "Model1":
+        if model_type == "Model 1":
             model = CNN()
             model.load_state_dict(torch.load('model.pth'))
-        elif model_type == "Model2":
+        elif model_type == "Model 2":
             model = FNN()
             model.load_state_dict(torch.load('model2.pth'))
-        elif model_type == "Model3":
+        elif model_type == "Model 3":
            model = DeepCNN()
            model.load_state_dict(torch.load('model3.pth')) 
         else:
@@ -136,9 +137,11 @@ def upload_file():
         # Make predictions
         with torch.no_grad():
             output = model(image_tensor)
-            _, predicted = torch.max(output, 1)
+            probs = F.softmax(output, dim=1)  
+            confidence, predicted = torch.max(probs, 1)
 
         prediction = predicted.item()
+        confidence_percent = round(confidence.item() * 100, 2)
         
         # Create Confusion Matrix
         cm = np.zeros((10, 10), dtype="int")
@@ -154,7 +157,7 @@ def upload_file():
         plt.savefig(cm_path, dpi=300, bbox_inches='tight')
         plt.close()
 
-        return render_template('model.html', file_path=file_path, prediction=prediction, cm_path=cm_path)
+        return render_template('model.html', file_path=file_path, prediction=prediction, cm_path=cm_path, confidence_percent=confidence_percent)
 
     return "Invalid file type. Only images are allowed."
 
@@ -163,17 +166,17 @@ def model_images():
     model_name = request.form.get('model-type')
     session['model-type'] = request.form.get('model-type')
 
-    if model_name == "Model1":
+    if model_name == "Model 1":
         cm_model_path = "static/images/model1_confusion_matrix.png"
         training_loss = "static/images/model1_trainingloss.png"
-    elif model_name == "Model2":
+    elif model_name == "Model 2":
         cm_model_path = "static/images/model2_confusion_matrix.png"
         training_loss = "static/images/model2_trainingloss.png"
-    elif model_name == "Model3":
+    elif model_name == "Model 3":
         cm_model_path = "static/images/model3_confusion_matrix.png"
         training_loss = "static/images/model3_trainingloss.png"
 
-    return redirect(url_for('index', cm_model_path=cm_model_path, training_loss=training_loss))
+    return redirect(url_for('index', cm_model_path=cm_model_path, training_loss=training_loss, model_name=model_name))
 
 # Route to serve the uploaded image
 @app.route('/uploads/<filename>')
