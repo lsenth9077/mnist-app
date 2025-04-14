@@ -18,4 +18,13 @@ python3 app.py
 ```
 
 ## Model Analysis
-The three models I have trained before are a **Feedforward Neural Network**(FNN), a **Convolutional Neural Network**(CNN), and a **Deep Convolutional Neural Network**(DCNN). While my FNN model had three fully connected layers, which first flattens the input image, and then, through the two other layers, finally outputs one of the 10 output classes (digits 0-9). However, an FNN does not have the greatest accuracy (only 90%) compared to CNNs and DCNNs because they have a more general-purpose application and struggle with complex image datasets. My CNN model uses two convolutional levels, two fully connected layers, and a maxpooling layer. The first convolutional layer detects the basic features of the image, the maxpooling layer downsamples the image, the second convolutional layer learns more complex patterns in the images, and the fully connected layers combine all the features and output the final predictions of the model. My DCNN model uses three convolutional layers, instead of the typical two layers, and uses dropout, which prevents overfitting with the model's accuracy. Compared to CNN models, DCNN models have a higher accuracy because they have a higher number of filters, which helps the model analyze more complex elements of an image, allowing the model to have an accuracy above 98%. 
+The three models I have trained before are a **Feedforward Neural Network**(FNN), a **Convolutional Neural Network**(CNN), and a **Deep Convolutional Neural Network**(DCNN). 
+
+### FNN Model
+My FNN model had three fully connected layers, which first flattens the input image, and then, through the two other layers, finally outputs one of the 10 output classes (digits 0-9). However, my FNN did not have the most incredible accuracy (only 90%) compared to CNNs and DCNNs because they have a more general-purpose application and struggle with complex image datasets. 
+
+### CNN Model
+My CNN model uses two convolutional levels, two fully connected layers, and a maxpooling layer. The first convolutional layer detects the basic features of the image, the maxpooling layer downsamples the image, the second convolutional layer learns more complex patterns in the images, and the fully connected layers combine all the features and output the final predictions of the model. 
+
+### DCNN Model
+My DCNN model uses three convolutional layers, instead of the typical two layers, and uses dropout, which prevents overfitting with the model's accuracy. Compared to CNN models, DCNN models have a higher accuracy because they have a higher number of filters, which helps the model analyze more complex elements of an image, allowing the model to have an accuracy above 98%. 
